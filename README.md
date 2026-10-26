@@ -1,18 +1,71 @@
-# SafeC: a memory-safety compiler for a small C-like language
+# SafeC — Ownership and Memory-Safety Compiler
 
-Compiler Design, Review 1 project. Written in Python 3 (no dependencies). Implements the pipeline from the proposal:
+SafeC is a teaching compiler for a small C-like language. It adds explicit
+ownership rules to heap pointers and checks their lifetimes before generating C.
+The project also includes a browser demo that walks through the compiler stages,
+highlights the source lines involved, and displays each intermediate form.
 
-    Lexer -> Parser -> Semantic analysis -> IR + CFG -> Ownership analysis -> C codegen
+> **Project:** Compiler Design · **Focus:** Static ownership analysis · **Language:** Python 3, no Python dependencies
 
-## Run
+| | |
+|---|---|
+| **Repository** | [Open the SafeC GitHub repository](https://github.com/dev-sathasivam18/safec-ownership-compiler) |
+| **Evaluation** | [View the full 30-program results](RESULTS.md) |
+| **Review walkthrough** | [Open the demo and presentation guide](REVIEW_GUIDE.md) |
+| **Screenshot gallery** | [Browse all 11 browser-demo screenshots](screenshots/README.md) |
 
-Requires Python 3. No Python packages are needed. `gcc` is needed for the optional C/ASan comparison.
+---
 
-    python3 -m safec prog.sc -o prog.c        # compile (exit 1 + errors if unsafe)
-    python3 -m safec prog.sc --emit-cfg       # show basic blocks / ownership IR
-    python3 evaluate.py                       # 30-program evaluation -> RESULTS.md (needs gcc)
+## Project description
 
-For a guided project-review walkthrough, see [REVIEW_GUIDE.md](REVIEW_GUIDE.md).
+SafeC supports integer values, one-level `int*` pointers, functions, branches,
+loops, allocation, and explicit `free`. An `own int*` value has one owner.
+Assigning it to another owner, passing it to an owning parameter, or returning
+it transfers ownership. A plain `int*` function parameter is borrowed and cannot
+consume the allocation.
+
+The compiler rejects common lifetime errors before it emits C, including
+use-after-free, double-free, use-after-move, and leaks at scope exit or return.
+
+## Compiler pipeline
+
+| Stage | Input → output | Purpose |
+|---|---|---|
+| **Lexer** | Source characters → tokens | Recognizes keywords, identifiers, numbers, and operators. |
+| **Parser** | Tokens → abstract syntax tree | Checks SafeC grammar and builds a structured program tree. |
+| **Semantic analysis** | AST → typed, resolved symbols | Checks names, types, function calls, arguments, and return values. |
+| **CFG construction** | AST → basic blocks and ownership IR | Represents branches and loops as control-flow edges and ownership operations. |
+| **Ownership analysis** | CFG → converged ownership facts | Propagates `Uninit`, `Owned`, `Moved`, and `Freed` states to a fixed point. |
+| **C code generation** | Verified AST → C source | Emits ordinary C only after all checks pass. |
+
+The ownership analysis joins possible states at branches and iterates through
+loops until the data-flow facts stop changing. It is path-insensitive: it
+considers both sides of a branch without evaluating the condition.
+
+## Features
+
+- **Single ownership:** owned pointers move when transferred; they cannot be
+  copied into a second owner.
+- **Borrowed parameters:** functions can inspect or update a pointer without
+  taking responsibility for freeing it.
+- **Static lifetime checks:** diagnoses use-after-free, double-free,
+  use-after-move, leaks, and possibly-freed values.
+- **Control-flow view:** prints the basic blocks and ownership instructions for
+  each function.
+- **Guided browser walkthrough:** Previous/Next controls step through source,
+  tokens, AST, symbols, CFG, ownership facts, and generated C. Each step has an
+  explanation, a pipeline diagram, and highlighted source lines.
+- **Bundled examples:** 15 intended-safe programs and 15 programs with injected
+  ownership bugs, plus longer examples for the review walkthrough.
+- **C output:** accepted programs are translated to C and can be compiled with
+  GCC.
+
+## Technologies used
+
+- Python 3 standard library for the compiler and local demo server
+- HTML, CSS, and JavaScript for the interactive browser frontend
+- C as the generated target language
+- GCC and AddressSanitizer for the optional runtime comparison
 
 ## Evaluation results
 
@@ -25,102 +78,153 @@ For a guided project-review walkthrough, see [REVIEW_GUIDE.md](REVIEW_GUIDE.md).
 | Buggy examples caught by `gcc -Wall` | 3/15 |
 | Buggy examples caught by AddressSanitizer | 5/15 |
 
-The test programs are a teaching/demo suite, not a general precision guarantee.
-LeakSanitizer is disabled because it is unsupported by some runtimes; SafeC's
-compile-time leak checks remain part of its 15/15 unsafe-case result. See the
-[full per-program evaluation](RESULTS.md) for details.
+AddressSanitizer ran with LeakSanitizer disabled because some runtimes do not
+support it. SafeC's static leak checks are included in its compile-time results.
+The example suite demonstrates the implementation against its own specification;
+it is not a general-purpose C safety guarantee. See [RESULTS.md](RESULTS.md)
+for per-program results and comparison details.
 
 ## Screenshots
 
-The screenshots below come from the live browser demo. Open the
-[complete screenshot gallery](screenshots/README.md) for the slide order and
-image descriptions.
+These screenshots were captured from the running browser demo. The complete
+screen captures are also listed in [screenshots/README.md](screenshots/README.md).
+
+### 1. SafeC demo overview
 
 ![SafeC demo overview](screenshots/01-demo-overview.png)
 
-<details>
-<summary>View all 11 browser demo screenshots</summary>
-
-### Accepted program and generated C
+### 2. Safe program accepted and C generated
 
 ![Safe program accepted](screenshots/02-safe-program-accepted.png)
 
-### Rejected program and ownership diagnostics
+### 3. Unsafe program rejected with ownership diagnostics
 
 ![Unsafe program diagnostic](screenshots/03-unsafe-program-diagnostic.png)
 
-### Control-flow graph
+### 4. Control-flow graph
 
 ![Control-flow graph](screenshots/04-control-flow-graph.png)
 
-### Guided walkthrough: source program
+### 5. Guided walkthrough — source program
 
 ![Walkthrough source program](screenshots/05-walkthrough-source.png)
 
-### Guided walkthrough: lexical analysis
+### 6. Guided walkthrough — lexical analysis
 
 ![Walkthrough lexical analysis](screenshots/06-lexer-tokens.png)
 
-### Guided walkthrough: parsing and AST
+### 7. Guided walkthrough — parsing and AST
 
 ![Walkthrough AST](screenshots/07-parser-ast.png)
 
-### Guided walkthrough: semantic symbols
+### 8. Guided walkthrough — semantic symbols
 
 ![Walkthrough semantic symbols](screenshots/08-semantic-symbols.png)
 
-### Guided walkthrough: control-flow graph
+### 9. Guided walkthrough — control-flow graph
 
 ![Walkthrough control-flow graph](screenshots/09-control-flow-stage.png)
 
-### Guided walkthrough: ownership fixed point
+### 10. Guided walkthrough — ownership fixed point
 
 ![Walkthrough ownership facts](screenshots/10-ownership-fixed-point.png)
 
-### Guided walkthrough: generated C
+### 11. Guided walkthrough — generated C
 
 ![Walkthrough generated C](screenshots/11-generated-c.png)
 
-</details>
+## How to run
 
-## Browser demo
+Requires Python 3. GCC is optional and needed only for compiling generated C
+or running the evaluation script. No Python packages are required.
 
-Start the local UI with `python3 demo_server.py`, then open <http://127.0.0.1:8000>.
-Choose any bundled safe or unsafe example, edit the source, and select **Compile**.
-Safe programs show generated C; rejected programs show source diagnostics. Enable
-**Show CFG** to display the generated control-flow graph. Stop the server with
-Ctrl+C. The demo uses only Python's standard library and binds to localhost.
+### Compile a SafeC program
 
-For the animated, stage-by-stage view, use **Start step-by-step**. **Next** and
-**Previous** move through the source, tokens, AST, semantic symbols, CFG,
-converged ownership facts, and generated C. Each stage includes an explanation,
-a pipeline diagram, and highlighted source lines. The examples
-`review_complex_safe.sc` and `review_branch_error.sc` are longer walkthroughs.
+```bash
+python3 -m safec tests/safe/s02_transfer_to_function.sc -o /tmp/safec_demo.c
+gcc -Wall /tmp/safec_demo.c -o /tmp/safec_demo
+/tmp/safec_demo
+```
 
-## Language
+### Show the control-flow graph
 
-    own int* p = alloc(4);     // alloc(n): n bytes, result is an owned pointer
-    *p = 10;  print(*p);       // deref read/write, built-in print(int)
-    free(p);                   // releases; p is Freed
-    own int* q = p;            // move: p becomes invalid
-    void eat(own int* x) {..}  // own parameter: caller gives ownership away, callee must free/move it
-    void look(int* x) {..}     // borrowed parameter: read/write only, cannot free or move
-    own int* make() {..}       // returns ownership
-    if / else / while / return / blocks, int arithmetic and comparisons
+```bash
+python3 -m safec tests/safe/s04_branch_both_free.sc --emit-cfg
+```
 
-Rules enforced at compile time: one owner per allocation, move on transfer, free exactly once, no leak at scope exit/return/overwrite.
+### See a compile-time ownership error
 
-## Ownership analysis
+```bash
+python3 -m safec tests/unsafe/u01_use_after_free.sc
+```
 
-Forward data-flow over the CFG. Each owned variable maps to a set of facts {Uninit, Owned, Moved(line), Freed(line)};
-join at merges is set union (Owned + Freed = MaybeFreed). Fixpoint first, errors reported once on the final states.
+The compiler prints a source location and diagnostic and exits without generating
+C for an unsafe program.
 
-## Known limits (be upfront about these in the review)
+### Start the browser demo
 
-- Path-insensitive: conditions are never evaluated, so `if (x) free(p); if (x) *p=1;` is rejected although it is safe.
-  Bugs on paths that never run in a given execution are still reported (that is the point, but it also means false positives are possible).
-- Only `int` and one level of pointer (`int*`). No arrays/bounds checks, no structs, no pointer aliasing (borrows exist only as parameters).
-- Temporal memory safety only (use-after-free, double free, leaks). Spatial errors (buffer overflow) are not covered.
-- Parser stops at the first syntax error. `break`/`continue`/`for` are not implemented.
-- The 30 test programs were written by the authors; results show the implementation matches its own spec, not general real-world precision.
-- The evaluator disables LeakSanitizer for portability because some ASan runtimes do not support it. SafeC's static leak checks are evaluated separately; runtime results cover AddressSanitizer-detectable memory errors.
+```bash
+python3 demo_server.py
+```
+
+Open <http://127.0.0.1:8000>. Choose an example and click **Compile**, or select
+`review_complex_safe` and click **Start step-by-step** for the full compiler
+walkthrough. Stop the local server with Ctrl+C.
+
+### Run the evaluation
+
+```bash
+python3 evaluate.py
+```
+
+This regenerates `RESULTS.md` and requires GCC with AddressSanitizer support.
+
+## Language example
+
+```c
+void consume(own int* value) {
+    free(value);              // callee receives and consumes ownership
+}
+
+int main() {
+    own int* p = alloc(4);    // p owns a 4-byte allocation
+    *p = 10;
+    print(*p);
+    free(p);                  // releases the allocation
+
+    own int* q = alloc(4);
+    consume(q);               // q is moved; do not use it afterward
+    return 0;
+}
+```
+
+An owned variable passed to `consume` is moved and cannot be used afterward.
+Borrowed parameters use `int*` and cannot free or move the allocation.
+
+## Repository structure
+
+```text
+SafeC/
+├── safec/                 Compiler: lexer, parser, semantic checks, CFG, analysis, C output
+├── tests/
+│   ├── safe/              15 expected-safe programs
+│   └── unsafe/            15 expected-unsafe programs
+├── examples/              Longer safe and unsafe review examples
+├── screenshots/            Browser demo screenshots for presentations
+├── demo.html               Interactive compiler frontend
+├── demo_server.py          Local Python server and compiler walkthrough API
+├── evaluate.py             GCC and AddressSanitizer comparison
+├── RESULTS.md              Per-program evaluation results
+└── REVIEW_GUIDE.md         Suggested project-review walkthrough
+```
+
+## Scope and limitations
+
+- The analysis is path-insensitive and may reject code that is safe only because
+  of a relationship between branch conditions.
+- SafeC supports `int` and one pointer level (`int*`); it does not model arrays,
+  structs, pointer aliasing, or bounds safety.
+- The checks cover temporal memory safety, not spatial errors such as
+  out-of-bounds writes.
+- The parser stops at its first syntax error. `break`, `continue`, and `for` are
+  not implemented.

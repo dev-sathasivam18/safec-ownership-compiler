@@ -14,6 +14,75 @@ Requires Python 3. No Python packages are needed. `gcc` is needed for the option
 
 For a guided project-review walkthrough, see [REVIEW_GUIDE.md](REVIEW_GUIDE.md).
 
+## Evaluation results
+
+| Check | Result |
+|---|---:|
+| Safe examples accepted | 15/15 |
+| Unsafe examples rejected with the expected error class | 15/15 |
+| Safe examples incorrectly rejected | 0/15 |
+| Generated C for safe examples ran clean under AddressSanitizer | 15/15 |
+| Buggy examples caught by `gcc -Wall` | 3/15 |
+| Buggy examples caught by AddressSanitizer | 5/15 |
+
+The test programs are a teaching/demo suite, not a general precision guarantee.
+LeakSanitizer is disabled because it is unsupported by some runtimes; SafeC's
+compile-time leak checks remain part of its 15/15 unsafe-case result. See the
+[full per-program evaluation](RESULTS.md) for details.
+
+## Screenshots
+
+The screenshots below come from the live browser demo. Open the
+[complete screenshot gallery](screenshots/README.md) for the slide order and
+image descriptions.
+
+![SafeC demo overview](screenshots/01-demo-overview.png)
+
+<details>
+<summary>View all 11 browser demo screenshots</summary>
+
+### Accepted program and generated C
+
+![Safe program accepted](screenshots/02-safe-program-accepted.png)
+
+### Rejected program and ownership diagnostics
+
+![Unsafe program diagnostic](screenshots/03-unsafe-program-diagnostic.png)
+
+### Control-flow graph
+
+![Control-flow graph](screenshots/04-control-flow-graph.png)
+
+### Guided walkthrough: source program
+
+![Walkthrough source program](screenshots/05-walkthrough-source.png)
+
+### Guided walkthrough: lexical analysis
+
+![Walkthrough lexical analysis](screenshots/06-lexer-tokens.png)
+
+### Guided walkthrough: parsing and AST
+
+![Walkthrough AST](screenshots/07-parser-ast.png)
+
+### Guided walkthrough: semantic symbols
+
+![Walkthrough semantic symbols](screenshots/08-semantic-symbols.png)
+
+### Guided walkthrough: control-flow graph
+
+![Walkthrough control-flow graph](screenshots/09-control-flow-stage.png)
+
+### Guided walkthrough: ownership fixed point
+
+![Walkthrough ownership facts](screenshots/10-ownership-fixed-point.png)
+
+### Guided walkthrough: generated C
+
+![Walkthrough generated C](screenshots/11-generated-c.png)
+
+</details>
+
 ## Browser demo
 
 Start the local UI with `python3 demo_server.py`, then open <http://127.0.0.1:8000>.

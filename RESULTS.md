@@ -22,7 +22,7 @@
 
 ## Buggy programs (15): SafeC should reject; compared with the same code under gcc and ASan (LeakSanitizer disabled)
 
-| program | injected bug | SafeC (compile time) | gcc -Wall | gcc -Wall -O2 | ASan/LSan (run time) |
+| program | injected bug | SafeC (compile time) | gcc -Wall | gcc -Wall -O2 | ASan (run time; LSan disabled) |
 |---|---|---|---|---|---|
 | u01_use_after_free | use-after-free | caught: use-after-free | silent | silent | caught: heap-use-after-free |
 | u02_double_free | double-free | caught: double-free | silent | silent | caught: double-free |
